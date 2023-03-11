@@ -5,10 +5,10 @@ export class LayeredCanvas {
         this.context = canvas.getContext('2d');
         console.log([this.canvas.width, this.canvas.height]);
 
-        this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
-        document.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
+        this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+        this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
+        this.canvas.addEventListener('pointerup', this.handlePointerUp.bind(this));
+        this.canvas.addEventListener('pointerleave', this.handlePointerLeave.bind(this));
         this.canvas.addEventListener('dragover', this.handleDragOver.bind(this));
         this.canvas.addEventListener('drop', this.handleDrop.bind(this));
 
@@ -16,10 +16,10 @@ export class LayeredCanvas {
     }
 
     cleanup() {
-        this.canvas.removeEventListener('mousedown', this.handleMouseDown.bind(this));
-        this.canvas.removeEventListener('mousemove', this.handleMouseMove.bind(this));
-        this.canvas.removeEventListener('mouseup', this.handleMouseUp.bind(this));
-        document.removeEventListener('mouseleave', this.handleMouseLeave.bind(this));
+        this.canvas.removeEventListener('pointerdown', this.handlePointerDown.bind(this));
+        this.canvas.removeEventListener('pointermove', this.handlePointerMove.bind(this));
+        this.canvas.removeEventListener('pointerup', this.handlePointerUp.bind(this));
+        this.canvas.removeEventListener('pointerleave', this.handlePointerLeave.bind(this));
         this.canvas.removeEventListener('dragover', this.handleDragOver.bind(this));
         this.canvas.removeEventListener('drop', this.handleDrop.bind(this));
     }
@@ -35,44 +35,46 @@ export class LayeredCanvas {
         return [x, y];
     }
     
-    handleMouseDown(event) {
+    handlePointerDown(event) {
         const p = this.getCanvasPosition(event);
-      
+        
         for (let i = this.layers.length - 1; i >= 0; i--) {
             const layer = this.layers[i];
             this.payload = layer.accepts(p);
             if (this.payload) {
-                layer.mouseDown(p, this.payload);
+                layer.pointerDown(p, this.payload);
                 this.draggingLayer = layer;
                 this.dragStart = p;
+                this.canvas.setPointerCapture(event.pointerId);
                 break;
             }
         }
         this.redrawIfRequired();
     }
       
-    handleMouseMove(event) {
-        this.mouseCursor = this.getCanvasPosition(event);
+    handlePointerMove(event) {
+        this.pointerCursor = this.getCanvasPosition(event);
         if (this.draggingLayer) {
-            this.draggingLayer.mouseMove(this.getCanvasPosition(event), this.payload); // 念のため別の実体
+            this.draggingLayer.pointerMove(this.getCanvasPosition(event), this.payload); // 念のため別の実体
+            this.redrawIfRequired();
         }
-        this.redrawIfRequired();
     }
     
-    handleMouseUp(event) {
+    handlePointerUp(event) {
         if (this.draggingLayer) {
-            this.draggingLayer.mouseUp(this.getCanvasPosition(event), this.payload);
+            this.draggingLayer.pointerUp(this.getCanvasPosition(event), this.payload);
             this.draggingLayer = null;
+            this.redrawIfRequired();
         }
-        this.redrawIfRequired();
     }
       
-    handleMouseLeave(event) {
-        this.mouseCursor = [-1,-1];
+    handlePointerLeave(event) {
+        this.pointerCursor = [-1,-1];
         if (this.draggingLayer) {
-            this.handleMouseUp(event);
+            this.handlepointerUp(event);
+            this.redrawIfRequired();
+            this.canvas.releasePointerCapture(event.pointerId);
         }
-        this.redrawIfRequired();
     }
 
     handleDragOver(event) {
@@ -93,7 +95,7 @@ export class LayeredCanvas {
                 console.log("image loaded", image.width, image.height);
                 for (let i = this.layers.length - 1; i >= 0; i--) {
                     const layer = this.layers[i];
-                    if (layer.dropped(image, this.mouseCursor)) {
+                    if (layer.dropped(image, this.pointerCursor)) {
                         this.redrawIfRequired();
                         break;
                     }
@@ -132,39 +134,44 @@ export class LayeredCanvas {
         this.layers.push(layer);
     }
     
+    isPointerOnCanvas(m) {
+        const rect = canvas.getBoundingClientRect();
+        const f = 0 <= m[0] && m[0] <= rect.width && 0 <= m[1] && m[1] <= rect.height;
+        return f;
+    }
 }
 
 
-let mouseSequence = { // mixin
-    mouseDown(p, payload) {
-        console.log("mouseDown", p)
-        this.mouseHandler = this.mouse(p, payload);
+let pointerSequence = { // mixin
+    pointerDown(p, payload) {
+        console.log("pointerDown", p)
+        this.pointerHandler = this.pointer(p, payload);
     },
-    mouseMove(p, payload) {
-        if (this.mouseHandler) {
-            this.mouseHandler.next(p);
+    pointerMove(p, payload) {
+        if (this.pointerHandler) {
+            this.pointerHandler.next(p);
         }
     },
-    mouseUp(p, payload) {
-        if (this.mouseHandler) {
-            this.mouseHandler.next(null);
-            this.mouseHandler = null;
+    pointerUp(p, payload) {
+        if (this.pointerHandler) {
+            this.pointerHandler.next(null);
+            this.pointerHandler = null;
         }
     },
 /*
-    sample mouse handler
-    *mouse(p) {
+    sample pointer handler
+    *pointer(p) {
         while (p = yield) {
-            console.log("mouse", p);
+            console.log("pointer", p);
         }
     }
 */
 };
 
-export function sequentializeMouse(layerClass) {
-    layerClass.prototype.mouseDown = mouseSequence.mouseDown;
-    layerClass.prototype.mouseMove = mouseSequence.mouseMove;
-    layerClass.prototype.mouseUp = mouseSequence.mouseUp;
+export function sequentializePointer(layerClass) {
+    layerClass.prototype.pointerDown = pointerSequence.pointerDown;
+    layerClass.prototype.pointerMove = pointerSequence.pointerMove;
+    layerClass.prototype.pointerUp = pointerSequence.pointerUp;
 }
 
 export class Layer {
@@ -173,9 +180,9 @@ export class Layer {
     redraw() { this.redrawRequired = true; }
 
     accepts(point) { return null; }
-    mouseDown(point, payload) { console.log("A");}
-    mouseMove(point, payload) {}
-    mouseUp(point, payload) {}
+    pointerDown(point, payload) { console.log("A");}
+    pointerMove(point, payload) {}
+    pointerUp(point, payload) {}
     render(canvas, ctx) {}
     dropped(image, position) { return false; }
 }
