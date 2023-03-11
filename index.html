@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+    <!---- css -->
+    <style>
+        .container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            width: 1280px;
+            height: 1440px;
+            background-color: gray;
+            margin: 0 auto;
+        }
+        .console {
+            width: 320px;
+        }
+        canvas {
+            background-color: white;
+        }
+    </style>
+<body>
+    <div class="container">
+        <div class="console">
+            <textarea id="markUp" rows="60" cols="40">
+{
+    "margin" : {
+        "top": 4,
+        "bottom": 4,
+        "left": 8,
+        "right": 8,
+    },
+    "width": 180,
+    "spacing": 2,
+    "column": [
+        { "height": 17 },
+        { "height": 25, 
+            "spacing": 2,
+            "row": [
+            { "width": 45 },
+            { "width": 55 },
+            ],
+        },
+        { "height": 17 }
+    ]
+}
+                </textarea>
+            <textarea id="markUpError" cols="40" rows="10"></textarea>
+        </div>
+        <canvas id="canvas" width="840" height="1188"></canvas>
+    </div>
+
+    <script type="module" defer>
+        import { doIt } from './sandbox.js';
+        doIt();
+    </script>
+</body>
+</html>
