@@ -2,6 +2,7 @@ import { LayeredCanvas, Layer, sequentializeMouse } from "./layeredCanvas.js";
 import { FrameElement, calculatePhysicalLayout, findLayoutAt } from "./frameTree.js";
 import { translate, scale } from "./pictureControl.js";
 import { initialieKeyCache, keyDownFlags } from "./keyCache.js";
+import { JSONEditor } from 'vanilla-jsoneditor'
 
 let layeredCanvas;
 let frameLayer;
@@ -14,6 +15,10 @@ class FrameLayer extends Layer {
 
     render(canvas, ctx) {
         const size = [canvas.width, canvas.height];
+        // render white
+        ctx.fillStyle = "rgb(255,255,255)";
+        ctx.fillRect(0, 0, size[0], size[1]);
+
         const layout = calculatePhysicalLayout(this.frameTree, [840, 1188], [0, 0]);
         console.log("render", layout);
         this.renderElement(ctx, layout);
@@ -103,18 +108,39 @@ class FrameLayer extends Layer {
     }
 }
 
-function loadImage(relativePath) {
-    var img = new Image();
-    img.src = relativePath;
-    return img;
+function collectImages(frameTree) {
+    const images = [];
+    if (!frameTree.children || frameTree.children.length === 0) {
+        images.push(frameTree.image);
+    } else {
+        for (let i = 0; i < frameTree.children.length; i++) {
+            const childImages = collectImages(frameTree.children[i]);
+            images.push(...childImages);
+        }
+    }
+    return images;
 }
 
-function markUpChanged(markUp) {
+function dealImages(frameTree, images) {
+    if (!frameTree.children || frameTree.children.length === 0) {
+        frameTree.image = images.shift();
+    } else {
+        for (let i = 0; i < frameTree.children.length; i++) {
+            dealImages(frameTree.children[i], images);
+        }
+    }
+}
+
+function markUpChanged(markUp) { // markUp is { json } or { text }
     console.log(markUp);
     let json;
     try {
         // parse json
-        json = JSON.parse(markUp);
+        if (markUp.json) {
+            json = markUp.json;
+        } else {
+            json = JSON.parse(markUp.text);
+        }
     }
     catch (e) {
         // ignore
@@ -123,8 +149,11 @@ function markUpChanged(markUp) {
     }
 
     try {
-        const frameTree = FrameElement.compile(json);
-        layeredCanvas.layers[0].frameTree = frameTree;
+        const images = collectImages(frameLayer.frameTree);
+        console.log(images);
+        const newFrameTree = FrameElement.compile(json);
+        frameLayer.frameTree = newFrameTree;
+        dealImages(newFrameTree, images);
         layeredCanvas.redraw();
     }
     catch(e) {
@@ -150,7 +179,7 @@ export function doIt() {
               "row": [
                 { "width": 45 },
                 { "width": 55 },
-              ],
+              ]
             },
             { "height": 17 }
         ]
@@ -179,11 +208,17 @@ export function doIt() {
     layeredCanvas.addLayer(frameLayer);
     layeredCanvas.redraw();
 
-    const markUpTextArea = document.getElementById("markUp");
-    console.log(markUpTextArea);
-    // markUpTextArea.value = JSON.stringify(markUp);
-    markUpTextArea.addEventListener("input", (e) => {
-        markUpChanged(markUpTextArea.value);
+    const editor = new JSONEditor({
+        target: document.getElementById('jsoneditor'),
+        props: {
+            mode: "text",
+            content: { json: markUp },
+            onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
+                // content is an object { json: JSONData } | { text: string }
+                console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
+                markUpChanged(updatedContent);
+            }
+        }
     });
 }
 

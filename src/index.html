@@ -18,6 +18,11 @@
         .console {
             width: 320px;
         }
+        #jsoneditor {
+            width: 320px;
+            height: 800px;
+            background-color: white;
+        }
         canvas {
             background-color: white;
         }
@@ -25,29 +30,7 @@
 <body>
     <div class="container">
         <div class="console">
-            <textarea id="markUp" rows="60" cols="40">
-{
-    "margin" : {
-        "top": 4,
-        "bottom": 4,
-        "left": 8,
-        "right": 8,
-    },
-    "width": 180,
-    "spacing": 2,
-    "column": [
-        { "height": 17 },
-        { "height": 25, 
-            "spacing": 2,
-            "row": [
-            { "width": 45 },
-            { "width": 55 },
-            ],
-        },
-        { "height": 17 }
-    ]
-}
-                </textarea>
+            <div id="jsoneditor" rows="60" cols="40"></div>
             <textarea id="markUpError" cols="40" rows="10"></textarea>
         </div>
         <canvas id="canvas" width="840" height="1188"></canvas>

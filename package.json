@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "vite": "^4.1.0"
+  },
+  "dependencies": {
+    "vanilla-jsoneditor": "^0.15.1"
   }
 }

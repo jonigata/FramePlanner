@@ -13,9 +13,6 @@ export class FrameElement {
     }
 
     static compile(markUpElement) {
-        console.log(markUpElement);
-        console.log(markUpElement.column);
-        console.log(markUpElement.row);
         const width = markUpElement.width || 1;
         const height = markUpElement.height || 1;
         const element = new FrameElement(markUpElement.width || markUpElement.height || 1);
