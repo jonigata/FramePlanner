@@ -109,7 +109,7 @@ export class LayeredCanvas {
     render() {
         for (let i = 0; i < this.layers.length; i++) {
             const layer = this.layers[i];
-            layer.render(this.canvas, this.context);
+            layer.render(this.context);
         }
     }
 
@@ -131,6 +131,7 @@ export class LayeredCanvas {
     }
     
     addLayer(layer) {
+        layer.canvas = this.canvas;
         this.layers.push(layer);
     }
     
@@ -138,6 +139,11 @@ export class LayeredCanvas {
         const rect = canvas.getBoundingClientRect();
         const f = 0 <= m[0] && m[0] <= rect.width && 0 <= m[1] && m[1] <= rect.height;
         return f;
+    }
+
+    setCanvasSize(w, h) {
+        this.canvas.width = w;
+        this.canvas.height = h;
     }
 }
 
@@ -177,12 +183,13 @@ export function sequentializePointer(layerClass) {
 export class Layer {
     constructor() {}
 
+    getCanvasSize() {return [this.canvas.width, this.canvas.height];}
     redraw() { this.redrawRequired = true; }
 
     accepts(point) { return null; }
     pointerDown(point, payload) { console.log("A");}
     pointerMove(point, payload) {}
     pointerUp(point, payload) {}
-    render(canvas, ctx) {}
+    render(ctx) {}
     dropped(image, position) { return false; }
 }

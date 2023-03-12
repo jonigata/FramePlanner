@@ -15,13 +15,13 @@ class FrameLayer extends Layer {
         this.frameTree = frameTree;
     }
 
-    render(canvas, ctx) {
-        const size = [canvas.width, canvas.height];
+    render(ctx) {
+        const size = this.getCanvasSize();
         // render white
         ctx.fillStyle = "rgb(255,255,255)";
         ctx.fillRect(0, 0, size[0], size[1]);
 
-        const layout = calculatePhysicalLayout(this.frameTree, [840, 1188], [0, 0]);
+        const layout = calculatePhysicalLayout(this.frameTree, size, [0, 0]);
         this.renderElement(ctx, layout);
     }
 
@@ -77,7 +77,7 @@ class FrameLayer extends Layer {
 
     dropped(image, position) {
         const size = [image.width, image.height];
-        const layout = calculatePhysicalLayout(this.frameTree, [840, 1188], [0, 0]);
+        const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
         let layoutlet = findLayoutAt(layout, position);
         if (layoutlet) {
             // calc expansion to longer size
@@ -92,8 +92,7 @@ class FrameLayer extends Layer {
     }
 
     accepts(point) {
-        const size = [840, 1188];
-        const layout = calculatePhysicalLayout(this.frameTree, size, [0, 0]);
+        const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
         const layoutElement = findLayoutAt(layout, point);
         if (layoutElement && layoutElement.element.image) {
             console.log("accepts");
@@ -286,4 +285,9 @@ export function doIt() {
 
 export function saveImage() {
     saveCanvas(layeredCanvas.canvas, "frame.png", latestJson);
+}
+
+export function setCanvasSize(w, h) {
+    layeredCanvas.setCanvasSize(w, h);
+    layeredCanvas.redraw();
 }

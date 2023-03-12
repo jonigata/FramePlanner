@@ -12,6 +12,7 @@
     "vite": "^4.1.0"
   },
   "dependencies": {
+    "milligram": "^1.4.1",
     "vanilla-jsoneditor": "^0.15.1"
   }
 }

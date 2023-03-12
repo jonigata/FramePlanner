@@ -2,44 +2,126 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" href="./normalize.css">
+    <link rel="stylesheet" href="./skeleton.css">
 </head>
     <!---- css -->
     <style>
-        .container {
+        body {
+            background-color: gray;
+        }
+        .container1 {
             display: flex;
-            gap: 12px;
             justify-content: center;
-            align-items: center;
+            align-items: stretch;
+            gap: 12px;
             width: 1280px;
             height: 1440px;
-            background-color: gray;
             margin: 0 auto;
+            padding-top: 32px;
+            padding-bottom: 32px;
+        }
+        .hbox {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            align-items: center;
+        }
+        .vbox {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
         }
         .console {
-            width: 320px;
+            display: flex;
+            flex-direction: column;
+            width: 400px;
+            align-items: center;
+            gap: 12px;
         }
         #jsoneditor {
-            width: 320px;
+            width: 400px;
             height: 800px;
             background-color: white;
+        }
+        .labeled-component {
+            display: flex;
+            gap: 4px;
+        }
+        .paper {
+            width: 880px;
         }
         canvas {
             background-color: white;
         }
+
     </style>
+
 <body>
-    <div class="container">
+    <div class="container1">
         <div class="console">
+            <!-- canvas size -->
+            <div class="hbox">
+                <div class="vbox">
+                    <div class="labeled-component">
+                        <label for="canvas-width">Width</label>
+                        <input type="range" id="canvas-width" min="512" max="2048" step="1" value="840">
+                        <label for="canvas-width" id="canvas-width-label">840</label>
+                    </div>
+                    <div class="labeled-component">
+                        <label for="canvas-height">Height</label>
+                        <input type="range" id="canvas-height" min="512" max="2048" step="1" value="1188">
+                        <label for="canvas-width" id="canvas-height-label">1188</label>
+                    </div>
+                </div>
+                <button class="button-primary" id="A4">A4</button>
+                <button class="button-primary" id="B5">B5</button>
+            </div>
+
+            <!-- json editor -->
             <div id="jsoneditor" rows="60" cols="40"></div>
-            <textarea id="markUpError" cols="40" rows="10"></textarea>
-            <button id="saveButton">Save</button>
+
+            <!-- save button -->
+            <button class="button-primary" id="saveButton">Save</button>
         </div>
-        <canvas id="canvas" width="840" height="1188"></canvas>
+        <div class="paper">
+            <canvas id="canvas" width="840" height="1188"></canvas>
+        </div>
     </div>
 
+    <script>
+    </script>
+
     <script type="module" defer>
-        import { doIt } from './sandbox.js';
+        import { doIt, setCanvasSize } from './sandbox.js';
         doIt();
-</script>
+
+        const cwl = document.getElementById('canvas-width-label');
+        const chl = document.getElementById('canvas-height-label');
+        function updateCanvasSize() {
+            cwl.textContent = cw.value;
+            chl.textContent = ch.value;
+            setCanvasSize(cw.value, ch.value);
+        }
+
+        const cw = document.getElementById('canvas-width');
+        const ch = document.getElementById('canvas-height');
+        let button = document.getElementById('A4');
+        button.addEventListener('click', function() {
+            cw.value = 840;
+            ch.value = 1188;
+            updateCanvasSize();
+        });
+        button = document.getElementById('B5');
+        button.addEventListener('click', function() {
+            cw.value = 728;
+            ch.value = 1028;
+            updateCanvasSize();
+        });
+
+        cw.addEventListener('input', updateCanvasSize);
+        ch.addEventListener('input', updateCanvasSize);
+    </script>
 </body>
 </html>
