@@ -82,6 +82,7 @@ export class LayeredCanvas {
     }
 
     handleDrop(event) {
+        this.pointerCursor = this.getCanvasPosition(event);
         event.preventDefault();  // ブラウザのデフォルトの画像表示処理をOFF
         var file = event.dataTransfer.files[0];
 
