@@ -265,6 +265,7 @@ export function doIt() {
     frameLayer = new FrameLayer(frameTree);
     layeredCanvas.addLayer(frameLayer);
     layeredCanvas.redraw();
+    latestJson = markUp;
 
     const editor = new JSONEditor({
         target: document.getElementById('jsoneditor'),
