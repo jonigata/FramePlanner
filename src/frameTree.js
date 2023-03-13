@@ -7,6 +7,10 @@ export class FrameElement {
         this.children = [];
         this.localLength = 0; // 子要素の進行方向サイズ
         this.localBreadth = 0; // 子要素の進行方向以外のサイズ
+        this.spacing = 0;
+        this.margin = {top:0, bottom:0, left:0, right:0};
+        this.translation = [0, 0];
+        this.scale = [1, 1]; 
 
         // リーフ要素の場合は絵がある可能性がある
         this.image = null;
@@ -40,6 +44,44 @@ export class FrameElement {
         return element;
     }
 
+    static decompile(element) {
+        return this.decompileAux(element, 'v');
+    }
+
+    static decompileAux(element, parentDir) {
+        function cleanMargin(mm) {
+            const m = {};
+            if (mm.top !== 0) { m.top = mm.top; }
+            if (mm.bottom !== 0) { m.bottom = mm.bottom; }
+            if (mm.left !== 0) { m.left = mm.left; }
+            if (mm.right !== 0) { m.right = mm.right; }
+            return m;
+        }
+
+        const markUpElement = {};
+        if (element.direction) {
+            const dir = element.direction == 'h' ? 'row' : 'column';
+            markUpElement[dir] = [];
+            for (let i = 0; i < element.children.length; i++) {
+                markUpElement[dir].push(this.decompileAux(element.children[i], element.direction));
+            }
+            if (element.spacing !== 0) {
+                markUpElement.spacing = element.spacing;
+            }
+            const margin = cleanMargin(element.margin);
+            if (margin) {
+                markUpElement.margin = margin;
+            }
+        } else {
+            if (parentDir == 'h') {
+                markUpElement.width = element.rawSize;
+            } else {
+                markUpElement.height = element.rawSize;
+            }
+        }
+        return markUpElement;
+    }
+
     static findParent(element, target) {
         for (let i = 0; i < element.children.length; i++) {
             const child = element.children[i];
@@ -71,6 +113,46 @@ export class FrameElement {
         // ルート要素は削除できない
     }
 
+    static splitElementHorizontal(root, target) {
+        this.splitElement(root, target, 'h');
+    }
+
+    static splitElementVertical(root, target) {
+        this.splitElement(root, target, 'v');
+    }
+
+    static splitElement(root, target, splitDirection) {
+        const parent = this.findParent(root, target);
+        if (parent) {
+            const dir = parent.direction;
+            console.log(dir, splitDirection);
+            if (dir === splitDirection) { 
+                console.log("same direction");
+                const index = parent.children.indexOf(target);
+                const spacing = parent.spacing;
+                const length = target.rawSize;
+                const newElement = new FrameElement((length - spacing) / 2);
+                newElement.calculateLengthAndBreadth();
+                target.rawSize = newElement.rawSize;
+                parent.children.splice(index+1, 0, newElement);
+                parent.calculateLengthAndBreadth();
+            } else {
+                console.log("different direction");
+                const index = parent.children.indexOf(target);
+                const newElement = new FrameElement(target.rawSize);
+                newElement.direction = splitDirection;
+                newElement.margin = JSON.parse(JSON.stringify(target.margin));
+                for (let i = 0; i < 2; i++) {
+                    const newChild = new FrameElement(target.rawSize);
+                    newChild.calculateLengthAndBreadth();
+                    newElement.children.push(newChild);
+                }
+                newElement.calculateLengthAndBreadth();
+                parent.children[index] = newElement;
+            } 
+        }
+    }
+
     calculateLengthAndBreadth() {
         let totalLength = 0;
         if (this.direction == 'v') {
@@ -82,9 +164,9 @@ export class FrameElement {
         }
         for (let i = 0; i < this.children.length; i++) {
             const child = this.children[i];
-            totalLength += child.rawSize + this.spacing;
+            if (0 < i) { totalLength += this.spacing; }
+            totalLength += child.rawSize;
         }
-        totalLength -= this.spacing;
         this.localLength = totalLength;
     }
 
@@ -110,6 +192,7 @@ function calculatePhysicalLayoutElements(element, size, origin) {
     let x = margin.left;
     let y = margin.top;
     const children = [];
+    console.log(margin, inner_width, inner_height, xf, yf, psize, ssize);
     for (let i = 0; i < element.children.length; i++) {
         const child = element.children[i];
         const childOrigin = [origin[0] + x * xf, origin[1] + y * yf];

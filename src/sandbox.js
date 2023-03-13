@@ -10,9 +10,10 @@ let frameLayer;
 let latestJson;
 
 class FrameLayer extends Layer {
-    constructor(frameTree) {
+    constructor(frameTree, onModify) {
         super();
         this.frameTree = frameTree;
+        this.onModify = onModify;
     }
 
     render(ctx) {
@@ -102,6 +103,18 @@ class FrameLayer extends Layer {
             if (keyDownFlags["KeyQ"]) {
                 console.log("KeyQ");
                 FrameElement.eraseElement(this.frameTree, layoutElement.element);
+                this.redraw();
+            }
+            if (keyDownFlags["KeyW"]) {
+                console.log("KeyW");
+                FrameElement.splitElementHorizontal(this.frameTree, layoutElement.element);
+                this.onModify(this.frameTree);
+                this.redraw();
+            }
+            if (keyDownFlags["KeyS"]) {
+                console.log("KeyS");
+                FrameElement.splitElementVertical(this.frameTree, layoutElement.element);
+                this.onModify(this.frameTree);
                 this.redraw();
             }
         }
@@ -228,7 +241,15 @@ function markUpChanged(markUp) { // markUp is { json } or { text }
     }
 }
 
+function JSONstringifyOrder(obj, space)
+{
+    const allKeys = new Set();
+    JSON.stringify(obj, (key, value) => (allKeys.add(key), value));
+    return JSON.stringify(obj, Array.from(allKeys).sort(), space);
+}
+
 export function doIt() {
+/*
     const markUp = {
         "margin" : {
             "top": 4,
@@ -250,6 +271,19 @@ export function doIt() {
             { "height": 17 }
         ]
     };
+*/
+    const markUp = { 
+        "margin" : {
+            "top": 4,
+            "bottom": 4,
+            "left": 8,
+            "right": 8,
+        },
+        "width": 10,
+        "column": [
+            {height: 10}
+        ]
+     };
 
     console.log("doIt");
 
@@ -258,10 +292,12 @@ export function doIt() {
         (code) => {
             return code === "AltLeft" || code === "AltRight" ||
                 code === "ControlLeft" || code === "ControlRight" ||
-                code === "KeyQ";
+                code === "KeyQ" || code === "KeyW" || code === "KeyS";
         });
 
     const frameTree = FrameElement.compile(markUp);
+    const mu = FrameElement.decompile(frameTree);
+    console.log(JSON.stringify(mu, null, 2));
 
     // load image from file
     /*
@@ -272,7 +308,12 @@ export function doIt() {
 
     sequentializePointer(FrameLayer);
     layeredCanvas = new LayeredCanvas(canvas);
-    frameLayer = new FrameLayer(frameTree);
+    frameLayer = new FrameLayer(
+        frameTree,
+        (frameTree) => {
+            const markUp = FrameElement.decompile(frameTree);
+            console.log(JSON.stringify(markUp, null, 2));
+        });
     layeredCanvas.addLayer(frameLayer);
     layeredCanvas.redraw();
     latestJson = markUp;
@@ -281,7 +322,7 @@ export function doIt() {
         target: document.getElementById('jsoneditor'),
         props: {
             mode: "text",
-            content: { json: markUp },
+            content: { text: JSONstringifyOrder(markUp, 2) },
             onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
                 // content is an object { json: JSONData } | { text: string }
                 console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
