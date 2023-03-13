@@ -204,7 +204,7 @@ function calculatePhysicalLayoutElements(element, size, origin) {
         if (dir == 'h') { x += child.rawSize + element.spacing; }
         if (dir == 'v') { y += child.rawSize + element.spacing; }
     }
-    return { size, origin, children, dir };
+    return { size, origin, children, element, dir };
 }
 
 function calculatePhysicalLayoutLeaf(element, size, origin) {
@@ -217,7 +217,7 @@ function isPointInRect(rect, point) {
     return x0 <= x && x < x1 && y0 <= y && y < y1;
 }
 
-function rectFromPositionAndSize(position, size) {
+export function rectFromPositionAndSize(position, size) {
     const [x, y] = position;
     const [w, h] = size;
     return [x, y, x + w, y + h];

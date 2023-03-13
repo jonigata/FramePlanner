@@ -1,5 +1,5 @@
 import { LayeredCanvas, Layer, sequentializePointer } from "./layeredCanvas.js";
-import { FrameElement, calculatePhysicalLayout, findLayoutAt, findBorderAt, makeBorderRect } from "./frameTree.js";
+import { FrameElement, calculatePhysicalLayout, findLayoutAt, findBorderAt, makeBorderRect, rectFromPositionAndSize } from "./frameTree.js";
 import { translate, scale } from "./pictureControl.js";
 import { initialieKeyCache, keyDownFlags } from "./keyCache.js";
 import { JSONEditor } from 'vanilla-jsoneditor'
@@ -30,8 +30,6 @@ class FrameLayer extends Layer {
             // fill cyan
             ctx.fillStyle = "rgba(0,200,200,0.7)";
             ctx.fillRect(this.borderRect[0], this.borderRect[1],
-                this.borderRect[2] - this.borderRect[0], this.borderRect[3] - this.borderRect[1]);
-            console.log(this.borderRect[0], this.borderRect[1],
                 this.borderRect[2] - this.borderRect[0], this.borderRect[3] - this.borderRect[1]);
         }
     }
@@ -94,7 +92,6 @@ class FrameLayer extends Layer {
             // calc expansion to longer size
             const scale = Math.max(layoutlet.size[0] / size[0], layoutlet.size[1] / size[1]);
             layoutlet.element.scale = [scale, scale];
-            console.log(scale);
             layoutlet.element.image = image;
             this.redraw();
             return true;
@@ -106,7 +103,6 @@ class FrameLayer extends Layer {
         const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
         const border = findBorderAt(layout, point);
         if (border) {
-            console.log("border");
             this.borderRect = makeBorderRect(border.layout, border.index);
         } else {
             this.borderRect = null;
@@ -120,56 +116,101 @@ class FrameLayer extends Layer {
         if (layoutElement) {
             if (layoutElement.element.image) {
                 console.log("accepts");
-                return layoutElement;
+                return { layout: layoutElement };
             }
             if (keyDownFlags["KeyQ"]) {
-                console.log("KeyQ");
                 FrameElement.eraseElement(this.frameTree, layoutElement.element);
                 this.redraw();
             }
             if (keyDownFlags["KeyW"]) {
-                console.log("KeyW");
                 FrameElement.splitElementHorizontal(this.frameTree, layoutElement.element);
                 this.onModify(this.frameTree);
                 this.redraw();
             }
             if (keyDownFlags["KeyS"]) {
-                console.log("KeyS");
                 FrameElement.splitElementVertical(this.frameTree, layoutElement.element);
                 this.onModify(this.frameTree);
                 this.redraw();
             }
         }
+
+        const border = findBorderAt(layout, point);
+        if (border) {
+            return { border: border };
+        }
+        
         return null;
     }
 
-    *pointer(p, layout) {
-        const element = layout.element;
-        if (keyDownFlags["AltLeft"] || keyDownFlags["AltRight"]) {
-            const origin = element.translation;
-            yield* translate(p, (q) => {
-                element.translation = [origin[0] + q[0], origin[1] + q[1]];
-                this.constraintTranslationAndScale(layout);
-                this.redraw(); // TODO: できれば、移動した要素だけ再描画したい
-            });
-        } else if (keyDownFlags["ControlLeft"] || keyDownFlags["ControlRight"]) {
-            const origin = element.scale[0];
-            const size = layout.size;
-            yield* scale(p, (q) => {
-/*                
-                if (element.image.width * origin * q[0] < size[0]) {
-                    q[0] = size[0] / (element.image.width * origin);
-                }
-                if (element.image.height * origin * q[1] < size[1]) {
-                    q[1] = size[1] / (element.image.height * origin);
-                }
-*/                
-                const s = Math.max(q[0], q[1]);
-                element.scale = [origin * s, origin * s];
-                this.constraintTranslationAndScale(layout);
-                this.redraw(); // TODO: できれば、移動した要素だけ再描画したい
-            });
+    *pointer(p, payload) {
+        if (payload.layout) {
+            const layout = payload.layout;
+            const element = layout.element;
+            if (keyDownFlags["AltLeft"] || keyDownFlags["AltRight"]) {
+                const origin = element.translation;
+                yield* translate(p, (q) => {
+                    element.translation = [origin[0] + q[0], origin[1] + q[1]];
+                    this.constraintTranslationAndScale(layout);
+                    this.redraw(); // TODO: できれば、移動した要素だけ再描画したい
+                });
+            } else if (keyDownFlags["ControlLeft"] || keyDownFlags["ControlRight"]) {
+                const origin = element.scale[0];
+                const size = layout.size;
+                yield* scale(p, (q) => {
+                    const s = Math.max(q[0], q[1]);
+                    element.scale = [origin * s, origin * s];
+                    this.constraintTranslationAndScale(layout);
+                    this.redraw(); // TODO: できれば、移動した要素だけ再描画したい
+                });
+            }
+        } else {
+            if (keyDownFlags["ControlLeft"] || keyDownFlags["ControlRight"]) {
+            } else {
+                yield* this.moveBorder(p, payload.border);
+            }
         }
+    }
+
+    *moveBorder(p, border) {
+        const layout = border.layout;
+        const index = border.index;
+
+        const child0 = layout.children[index-1];
+        const child1 = layout.children[index];
+
+        const c0 = child0.element;
+        const c1 = child1.element;
+        const rawSpacing = layout.element.spacing;
+        const rawSum = c0.rawSize + rawSpacing + c1.rawSize;
+
+        while (p = yield) {
+            const balance = this.getBorderBalance(p, border);
+            const t = balance * rawSum;
+            c0.rawSize = t - rawSpacing * 0.5;
+            c1.rawSize = rawSum - t - rawSpacing * 0.5;
+            this.redraw();
+        }
+
+        this.onModify(this.frameTree);
+    }
+
+    getBorderBalance(p, border) {
+        const layout = border.layout;
+        const index = border.index;
+
+        const child0 = layout.children[index-1];
+        const child1 = layout.children[index];
+
+        const rect0 = rectFromPositionAndSize(child0.origin, child0.size);
+        const rect1 = rectFromPositionAndSize(child1.origin, child1.size);
+
+        let t; // 0.0 - 1.0, 0.0: top or left of rect0, 1.0: right or bottom of rect1
+        if (layout.dir == 'h') {
+            t = (p[0] - rect0[0]) / (rect1[2] - rect0[0]);
+        } else {
+            t = (p[1] - rect0[1]) / (rect1[3] - rect0[1]);
+        }
+        return t;
     }
 
     constraintTranslationAndScale(layout) {
@@ -207,7 +248,6 @@ function collectImages(frameTree) {
             scale: frameTree.scale, 
             translation: frameTree.translation 
         });
-        console.log(images[images.length - 1]);
     } else {
         for (let i = 0; i < frameTree.children.length; i++) {
             const childImages = collectImages(frameTree.children[i]);
@@ -232,7 +272,6 @@ function dealImages(frameTree, images) {
 }
 
 function markUpChanged(markUp) { // markUp is { json } or { text }
-    console.log(markUp);
     let json;
     try {
         // parse json
@@ -250,11 +289,9 @@ function markUpChanged(markUp) { // markUp is { json } or { text }
 
     try {
         const images = collectImages(frameLayer.frameTree);
-        console.log(images);
         const newFrameTree = FrameElement.compile(json);
         frameLayer.frameTree = newFrameTree;
         dealImages(newFrameTree, images);
-        console.log("redraw");
         layeredCanvas.redraw();
         latestJson = json;
     }
@@ -322,8 +359,8 @@ export function doIt() {
     // const mu = FrameElement.decompile(frameTree);
     // console.log(JSON.stringify(mu, null, 2));
 
-    // load image from file
     /*
+    // load image from file
     frameTree.children[0].image  = loadImage("./samples/frame1.png");
     frameTree.children[1].children[0].image  = loadImage("./samples/frame2.png");
     frameTree.children[1].children[1].image  = loadImage("./samples/frame3.png");
@@ -335,7 +372,6 @@ export function doIt() {
         frameTree,
         (frameTree) => {
             const markUp = FrameElement.decompile(frameTree);
-            console.log(JSON.stringify(markUp, null, 2));
             skipJsonChange = true;
             editor.set({ text: JSONstringifyOrder(markUp, 2) });
             skipJsonChange = false;

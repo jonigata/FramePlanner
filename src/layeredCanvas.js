@@ -157,7 +157,6 @@ export class LayeredCanvas {
 
 let pointerSequence = { // mixin
     pointerDown(p, payload) {
-        console.log("pointerDown", p)
         this.pointerHandler = this.pointer(p, payload);
     },
     pointerMove(p, payload) {
