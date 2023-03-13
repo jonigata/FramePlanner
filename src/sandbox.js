@@ -8,6 +8,7 @@ import { saveCanvas } from "./saveCanvas.js";
 let layeredCanvas;
 let frameLayer;
 let latestJson;
+let skipJsonChange = false;
 
 class FrameLayer extends Layer {
     constructor(frameTree, onModify) {
@@ -296,8 +297,8 @@ export function doIt() {
         });
 
     const frameTree = FrameElement.compile(markUp);
-    const mu = FrameElement.decompile(frameTree);
-    console.log(JSON.stringify(mu, null, 2));
+    // const mu = FrameElement.decompile(frameTree);
+    // console.log(JSON.stringify(mu, null, 2));
 
     // load image from file
     /*
@@ -313,6 +314,9 @@ export function doIt() {
         (frameTree) => {
             const markUp = FrameElement.decompile(frameTree);
             console.log(JSON.stringify(markUp, null, 2));
+            skipJsonChange = true;
+            editor.set({ text: JSONstringifyOrder(markUp, 2) });
+            skipJsonChange = false;
         });
     layeredCanvas.addLayer(frameLayer);
     layeredCanvas.redraw();
@@ -326,7 +330,9 @@ export function doIt() {
             onChange: (updatedContent, previousContent, { contentErrors, patchResult }) => {
                 // content is an object { json: JSONData } | { text: string }
                 console.log('onChange', { updatedContent, previousContent, contentErrors, patchResult })
-                markUpChanged(updatedContent);
+                if (!skipJsonChange) { // あまり信用しないように
+                    markUpChanged(updatedContent);
+                }
             }
         }
     });

@@ -55,6 +55,7 @@ export class FrameElement {
             if (mm.bottom !== 0) { m.bottom = mm.bottom; }
             if (mm.left !== 0) { m.left = mm.left; }
             if (mm.right !== 0) { m.right = mm.right; }
+            if (Object.keys(m).length === 0) { return null; }
             return m;
         }
 
@@ -72,13 +73,13 @@ export class FrameElement {
             if (margin) {
                 markUpElement.margin = margin;
             }
-        } else {
-            if (parentDir == 'h') {
-                markUpElement.width = element.rawSize;
-            } else {
-                markUpElement.height = element.rawSize;
-            }
         }
+        if (parentDir == 'h') {
+            markUpElement.width = element.rawSize;
+        } else {
+            markUpElement.height = element.rawSize;
+        }
+
         return markUpElement;
     }
 
@@ -223,6 +224,7 @@ export function findLayoutAt(layout, position) {
             const found = findLayoutAt(child, position);
             if (found) { return found; }
         }
+        return null;
     }
     return layout;
 }
