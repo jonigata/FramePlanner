@@ -57,6 +57,12 @@ export class LayeredCanvas {
         if (this.draggingLayer) {
             this.draggingLayer.pointerMove(this.getCanvasPosition(event), this.payload); // 念のため別の実体
             this.redrawIfRequired();
+        } else {
+            for (let i = this.layers.length - 1; i >= 0; i--) {
+                const layer = this.layers[i];
+                layer.pointerHover(this.getCanvasPosition(event));
+            }
+            this.redrawIfRequired();
         }
     }
     
@@ -187,6 +193,7 @@ export class Layer {
     getCanvasSize() {return [this.canvas.width, this.canvas.height];}
     redraw() { this.redrawRequired = true; }
 
+    pointerHover(point) {}
     accepts(point) { return null; }
     pointerDown(point, payload) { console.log("A");}
     pointerMove(point, payload) {}

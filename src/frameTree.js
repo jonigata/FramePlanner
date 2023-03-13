@@ -193,7 +193,7 @@ function calculatePhysicalLayoutElements(element, size, origin) {
     let x = margin.left;
     let y = margin.top;
     const children = [];
-    console.log(margin, inner_width, inner_height, xf, yf, psize, ssize);
+    // console.log(margin, inner_width, inner_height, xf, yf, psize, ssize);
     for (let i = 0; i < element.children.length; i++) {
         const child = element.children[i];
         const childOrigin = [origin[0] + x * xf, origin[1] + y * yf];
@@ -204,18 +204,28 @@ function calculatePhysicalLayoutElements(element, size, origin) {
         if (dir == 'h') { x += child.rawSize + element.spacing; }
         if (dir == 'v') { y += child.rawSize + element.spacing; }
     }
-    return { size, origin, children };
+    return { size, origin, children, dir };
 }
 
 function calculatePhysicalLayoutLeaf(element, size, origin) {
     return { size, origin, element };
 }
 
-export function findLayoutAt(layout, position) {
+function isPointInRect(rect, point) {
+    const [x, y] = point;
+    const [x0, y0, x1, y1] = rect;
+    return x0 <= x && x < x1 && y0 <= y && y < y1;
+}
+
+function rectFromPositionAndSize(position, size) {
     const [x, y] = position;
-    const [ox, oy] = layout.origin;
-    const [w, h] = layout.size;
-    if (x < ox || x > ox + w || y < oy || y > oy + h) {
+    const [w, h] = size;
+    return [x, y, x + w, y + h];
+}
+
+export function findLayoutAt(layout, position) {
+    const r = rectFromPositionAndSize(layout.origin, layout.size);
+    if (!isPointInRect(r, position)) {
         return null;
     }
     if (layout.children) {
@@ -227,4 +237,54 @@ export function findLayoutAt(layout, position) {
         return null;
     }
     return layout;
+}
+
+export function findBorderAt(layout, position) {
+    const [x,y] = position;
+
+    const r = rectFromPositionAndSize(layout.origin, layout.size);
+    if (!isPointInRect(r, position)) {
+        return null;
+    }
+    if (layout.children) {
+        for (let i = 1; i < layout.children.length; i++) {
+            const child = layout.children[i];
+            const borderRect = makeBorderRect(layout, i);
+            if (isPointInRect(borderRect, [x, y])) {
+                return { layout, index: i };
+            }
+            const found = findBorderAt(child, position);
+            if (found) { return found; }
+        }
+        return null;
+    }
+    return null;
+}
+
+export function makeBorderRect(layout, index) {
+    if (layout.dir == 'h') {
+        return makeHorizontalBorderRect(layout, index);
+    } else {
+        return makeVerticalBorderRect(layout, index);
+    }
+}
+
+function makeHorizontalBorderRect(layout, index) {
+    const prev = layout.children[index - 1];
+    const curr = layout.children[index];
+    const cox0 = prev.origin[0] + prev.size[0];
+    const coy0 = curr.origin[1];
+    const cox1 = curr.origin[0];
+    const coy1 = curr.origin[1] + curr.size[1];
+    return [cox0 - 2, coy0, cox1 + 2, coy1];
+}
+
+function makeVerticalBorderRect(layout, index) {
+    const prev = layout.children[index - 1];
+    const curr = layout.children[index];
+    const cox0 = curr.origin[0];
+    const coy0 = prev.origin[1] + prev.size[1];
+    const cox1 = curr.origin[0] + curr.size[0];
+    const coy1 = curr.origin[1];
+    return [cox0, coy0 - 2, cox1, coy1 + 2];
 }

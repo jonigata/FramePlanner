@@ -1,5 +1,5 @@
 import { LayeredCanvas, Layer, sequentializePointer } from "./layeredCanvas.js";
-import { FrameElement, calculatePhysicalLayout, findLayoutAt } from "./frameTree.js";
+import { FrameElement, calculatePhysicalLayout, findLayoutAt, findBorderAt, makeBorderRect } from "./frameTree.js";
 import { translate, scale } from "./pictureControl.js";
 import { initialieKeyCache, keyDownFlags } from "./keyCache.js";
 import { JSONEditor } from 'vanilla-jsoneditor'
@@ -25,6 +25,15 @@ class FrameLayer extends Layer {
 
         const layout = calculatePhysicalLayout(this.frameTree, size, [0, 0]);
         this.renderElement(ctx, layout);
+
+        if (this.borderRect) {
+            // fill cyan
+            ctx.fillStyle = "rgba(0,200,200,0.7)";
+            ctx.fillRect(this.borderRect[0], this.borderRect[1],
+                this.borderRect[2] - this.borderRect[0], this.borderRect[3] - this.borderRect[1]);
+            console.log(this.borderRect[0], this.borderRect[1],
+                this.borderRect[2] - this.borderRect[0], this.borderRect[3] - this.borderRect[1]);
+        }
     }
 
     renderElement(ctx, layout) {
@@ -91,6 +100,18 @@ class FrameLayer extends Layer {
             return true;
         }
         return false;
+    }
+
+    pointerHover(point) {
+        const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
+        const border = findBorderAt(layout, point);
+        if (border) {
+            console.log("border");
+            this.borderRect = makeBorderRect(border.layout, border.index);
+        } else {
+            this.borderRect = null;
+        }
+        this.redraw();
     }
 
     accepts(point) {
@@ -250,7 +271,6 @@ function JSONstringifyOrder(obj, space)
 }
 
 export function doIt() {
-/*
     const markUp = {
         "margin" : {
             "top": 4,
@@ -272,7 +292,8 @@ export function doIt() {
             { "height": 17 }
         ]
     };
-*/
+
+/*
     const markUp = { 
         "margin" : {
             "top": 4,
@@ -284,7 +305,8 @@ export function doIt() {
         "column": [
             {height: 10}
         ]
-     };
+    };
+*/
 
     console.log("doIt");
 
