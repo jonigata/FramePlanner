@@ -103,6 +103,7 @@ class FrameLayer extends Layer {
         const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
         const border = findBorderAt(layout, point);
         if (border) {
+            console.log("border detect");
             this.borderRect = makeBorderRect(border.layout, border.index);
         } else {
             this.borderRect = null;
@@ -165,7 +166,7 @@ class FrameLayer extends Layer {
             }
         } else {
             if (keyDownFlags["ControlLeft"] || keyDownFlags["ControlRight"]) {
-                yield* this.scaleBorder(p, payload.border);
+                yield* this.expandBorder(p, payload.border);
             } else {
                 yield* this.moveBorder(p, payload.border);
             }
@@ -195,15 +196,16 @@ class FrameLayer extends Layer {
         this.onModify(this.frameTree);
     }
 
-    *scaleBorder(p, border) {
+    *expandBorder(p, border) {
         const element = border.layout.element;
         const rawSpacing = element.spacing;
+        const dir = border.layout.dir == 'h' ? 0 : 1;
+        const factor = border.layout.size[dir] / this.getCanvasSize()[dir];
         const s = p;
 
         while (p = yield) {
-            const scaleSource = border.layout.dir == 'h' ? p[0] - s[0] : p[1] - s[1];
-            const scale = 1.0 + scaleSource * 0.01;
-            element.spacing = Math.max(0, rawSpacing * scale);
+            const op = border.layout.dir == 'h' ? p[0] - s[0] : p[1] - s[1];
+            element.spacing = Math.max(0, rawSpacing + op * factor * 0.1);
             element.calculateLengthAndBreadth();
             this.redraw();
         }

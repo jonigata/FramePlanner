@@ -248,12 +248,13 @@ export function findBorderAt(layout, position) {
     }
     if (layout.children) {
         for (let i = 1; i < layout.children.length; i++) {
-            const child = layout.children[i];
             const borderRect = makeBorderRect(layout, i);
             if (isPointInRect(borderRect, [x, y])) {
                 return { layout, index: i };
             }
-            const found = findBorderAt(child, position);
+        }
+        for (let i = 0; i < layout.children.length; i++) {
+            const found = findBorderAt(layout.children[i], position);
             if (found) { return found; }
         }
         return null;
