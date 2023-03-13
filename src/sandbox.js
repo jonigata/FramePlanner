@@ -165,6 +165,7 @@ class FrameLayer extends Layer {
             }
         } else {
             if (keyDownFlags["ControlLeft"] || keyDownFlags["ControlRight"]) {
+                yield* this.scaleBorder(p, payload.border);
             } else {
                 yield* this.moveBorder(p, payload.border);
             }
@@ -188,6 +189,22 @@ class FrameLayer extends Layer {
             const t = balance * rawSum;
             c0.rawSize = t - rawSpacing * 0.5;
             c1.rawSize = rawSum - t - rawSpacing * 0.5;
+            this.redraw();
+        }
+
+        this.onModify(this.frameTree);
+    }
+
+    *scaleBorder(p, border) {
+        const element = border.layout.element;
+        const rawSpacing = element.spacing;
+        const s = p;
+
+        while (p = yield) {
+            const scaleSource = border.layout.dir == 'h' ? p[0] - s[0] : p[1] - s[1];
+            const scale = 1.0 + scaleSource * 0.01;
+            element.spacing = Math.max(0, rawSpacing * scale);
+            element.calculateLengthAndBreadth();
             this.redraw();
         }
 
