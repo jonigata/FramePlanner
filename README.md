@@ -2,7 +2,7 @@
 
 マンガの枠組みをツリー構造のデータ(JSON)で定義して、その中で各コマをウィンドウのように扱って絵を配置できるツールです。
 
-![TREE](/docs/doc2.png)
+https://user-images.githubusercontent.com/128374/224589004-7308540f-bdac-4c15-a70a-c43c59ce5c73.mp4
 
 ## 枠線定義JSON
 
