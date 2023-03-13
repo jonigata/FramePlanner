@@ -22,24 +22,16 @@ export class FrameElement {
         Object.assign(element.margin, markUpElement.margin || {});
 
         if (children) {
-            let totalLength = 0;
             if (markUpElement.column) {
                 element.direction = 'v';
-                totalLength = element.margin.top + element.margin.bottom;
-                element.localBreadth = element.margin.left + width + element.margin.right;
             } else if (markUpElement.row) {
                 element.direction = 'h';
-                totalLength = element.margin.left + element.margin.right;
-                element.localBreadth = element.margin.top + height + element.margin.bottom;
             }
             for (let i = 0; i < children.length; i++) {
-                const child = children[i];
-                const childElement = this.compile(child);
-                totalLength += childElement.rawSize + element.spacing;
+                const childElement = this.compile(children[i]);
                 element.children.push(childElement);
             }
-            totalLength -= element.spacing;
-            element.localLength = totalLength;
+            element.calculateLengthAndBreadth();
         } else {
             // leaf
             element.translation = [0, 0];
@@ -47,6 +39,55 @@ export class FrameElement {
         }
         return element;
     }
+
+    static findParent(element, target) {
+        for (let i = 0; i < element.children.length; i++) {
+            const child = element.children[i];
+            if (child == target) {
+                return element;
+            } else {
+                const parent = this.findParent(child, target);
+                if (parent) {
+                    return parent;
+                }
+            }
+        }
+        return null;
+    }
+
+    static eraseElement(root, target) {
+        const parent = this.findParent(root, target);
+        if (parent) {
+            if (parent.children.length === 1) { 
+                // 兄弟がいない場合は親を削除する
+                this.eraseElement(root, parent);
+            } else {
+                // 兄弟がいる場合は親から削除する
+                const index = parent.children.indexOf(target);
+                parent.children.splice(index, 1);
+                parent.calculateLengthAndBreadth();
+            }
+        }
+        // ルート要素は削除できない
+    }
+
+    calculateLengthAndBreadth() {
+        let totalLength = 0;
+        if (this.direction == 'v') {
+            totalLength = this.margin.top + this.margin.bottom;
+            this.localBreadth = this.margin.left + this.rawSize + this.margin.right;
+        } else if (this.direction == 'h') {
+            totalLength = this.margin.left + this.margin.right;
+            this.localBreadth = this.margin.top + this.rawSize + this.margin.bottom;
+        }
+        for (let i = 0; i < this.children.length; i++) {
+            const child = this.children[i];
+            totalLength += child.rawSize + this.spacing;
+        }
+        totalLength -= this.spacing;
+        this.localLength = totalLength;
+    }
+
 }
 
 export function calculatePhysicalLayout(element, size, origin) {

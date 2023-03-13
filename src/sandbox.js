@@ -94,9 +94,16 @@ class FrameLayer extends Layer {
     accepts(point) {
         const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
         const layoutElement = findLayoutAt(layout, point);
-        if (layoutElement && layoutElement.element.image) {
-            console.log("accepts");
-            return layoutElement;
+        if (layoutElement) {
+            if (layoutElement.element.image) {
+                console.log("accepts");
+                return layoutElement;
+            }
+            if (keyDownFlags["KeyQ"]) {
+                console.log("KeyQ");
+                FrameElement.eraseElement(this.frameTree, layoutElement.element);
+                this.redraw();
+            }
         }
         return null;
     }
@@ -154,6 +161,7 @@ class FrameLayer extends Layer {
         if (y0 < y) { element.translation[1] = y0 - origin[1] - (size[1] - rh) / 2; }
         if (y + rh < y1) { element.translation[1] = y1 - origin[1] - (size[1] - rh) / 2 - rh; }
     }
+
 }
 
 function collectImages(frameTree) {
@@ -248,7 +256,9 @@ export function doIt() {
     let canvas = document.getElementById("canvas");
     initialieKeyCache(canvas,
         (code) => {
-            return code === "AltLeft" || code === "AltRight" || code === "ControlLeft" || code === "ControlRight";
+            return code === "AltLeft" || code === "AltRight" ||
+                code === "ControlLeft" || code === "ControlRight" ||
+                code === "KeyQ";
         });
 
     const frameTree = FrameElement.compile(markUp);
