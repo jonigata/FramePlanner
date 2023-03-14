@@ -4,6 +4,10 @@
 
 https://user-images.githubusercontent.com/128374/224589004-7308540f-bdac-4c15-a70a-c43c59ce5c73.mp4
 
+
+https://user-images.githubusercontent.com/128374/224721175-9e8bd717-754b-4dea-8010-2421c98683b9.mp4
+
+
 ## 枠線定義JSON
 
 枠線定義jsonは、具体的にはこのような形になっています。
