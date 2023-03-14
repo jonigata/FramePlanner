@@ -115,10 +115,6 @@ class FrameLayer extends Layer {
         const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
         const layoutElement = findLayoutAt(layout, point);
         if (layoutElement) {
-            if (layoutElement.element.image) {
-                console.log("accepts");
-                return { layout: layoutElement };
-            }
             if (keyDownFlags["KeyQ"]) {
                 FrameElement.eraseElement(this.frameTree, layoutElement.element);
                 this.redraw();
@@ -132,6 +128,10 @@ class FrameLayer extends Layer {
                 FrameElement.splitElementVertical(this.frameTree, layoutElement.element);
                 this.onModify(this.frameTree);
                 this.redraw();
+            }
+            if (layoutElement.element.image) {
+                console.log("accepts");
+                return { layout: layoutElement };
             }
         }
 
@@ -230,6 +230,21 @@ class FrameLayer extends Layer {
             t = (p[1] - rect0[1]) / (rect1[3] - rect0[1]);
         }
         return t;
+    }
+
+    constraintAll() {
+        const layout = calculatePhysicalLayout(this.frameTree, this.getCanvasSize(), [0, 0]);
+        this.constraintAllRecursive(layout);
+    }
+
+    constraintAllRecursive(layout) {
+        if (layout.children) {
+            for (const child of layout.children) {
+                this.constraintAllRecursive(child);
+            }
+        } else if (layout.element && layout.element.image) {
+            this.constraintTranslationAndScale(layout);
+        }
     }
 
     constraintTranslationAndScale(layout) {
@@ -394,6 +409,8 @@ export function doIt() {
             skipJsonChange = true;
             editor.set({ text: JSONstringifyOrder(markUp, 2) });
             skipJsonChange = false;
+
+            frameLayer.constraintAll();
         });
     layeredCanvas.addLayer(frameLayer);
     layeredCanvas.redraw();

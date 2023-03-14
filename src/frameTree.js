@@ -148,6 +148,11 @@ export class FrameElement {
                     newChild.calculateLengthAndBreadth();
                     newElement.children.push(newChild);
                 }
+                if (target.image) {
+                    newElement.children[0].image = target.image;
+                    newElement.children[0].translation = target.translation;
+                    newElement.children[0].scale = target.scale;
+                }
                 newElement.calculateLengthAndBreadth();
                 parent.children[index] = newElement;
             } 
