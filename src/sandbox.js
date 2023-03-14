@@ -227,6 +227,9 @@ export function doIt() {
     document.getElementById('load-frame-template').addEventListener(
         'click', () => {
             const markUp = markUps[swiper.realIndex];
+            skipJsonChange = true;
+            editor.set({ text: JSONstringifyOrder(markUp, 2) });
+            skipJsonChange = false;
             markUpChanged({ json: markUp });
         }
     )
