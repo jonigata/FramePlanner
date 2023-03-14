@@ -2,7 +2,7 @@ export class LayeredCanvas {
     constructor(c) {
         console.log("initializeLayeredCanvas");
         this.canvas = c;
-        this.context = canvas.getContext('2d');
+        this.context = this.canvas.getContext('2d');
         console.log([this.canvas.width, this.canvas.height]);
 
         this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
@@ -143,7 +143,7 @@ export class LayeredCanvas {
     }
     
     isPointerOnCanvas(m) {
-        const rect = canvas.getBoundingClientRect();
+        const rect = this.canvas.getBoundingClientRect();
         const f = 0 <= m[0] && m[0] <= rect.width && 0 <= m[1] && m[1] <= rect.height;
         return f;
     }
